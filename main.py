@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 # Start of the bot
 intents = discord.Intents().default()
 BOT_TOKEN = getenv("BOT_TOKEN", None)
-bot = commands.Bot(command_prefix='lol ', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 # This is so the bot is ready to do stuff
