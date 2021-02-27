@@ -2,6 +2,7 @@ import asyncio
 from os import getenv
 import datetime as dt
 
+
 import discord
 from discord.ext import commands, tasks
 
@@ -22,6 +23,12 @@ async def on_ready():
 @bot.command(name='trolled')
 async def trolled(ctx):
     await ctx.send(file=discord.File(rf'./pictures/trollface.png'))
+
+
+@bot.command(name='music')
+async def game_music(ctx):
+    channel = await ctx.message.author.voice.channel.connect()
+    channel.play(discord.FFmpegPCMAudio(rf'./audio/gamemusic.mp3'))
 
 
 # Grabs the day and uploads the file corresponding
