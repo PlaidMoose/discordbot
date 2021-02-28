@@ -102,7 +102,7 @@ def endSong(path):
 
 
 @bot.command(pass_context=True)
-async def play(ctx, url):
+async def play(ctx, url, vc=None):
     if not ctx.message.author.voice:
         await ctx.send(
             'You are not connected to a voice channel')  # message when you are not connected to any voice channel
@@ -111,27 +111,47 @@ async def play(ctx, url):
     else:
         channel = ctx.message.author.voice.channel
 
-    voice_client = await channel.connect()
+        voice_client = await channel.connect()
     path = ''
 
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        file = ydl.extract_info(url, download=True)
-        path = './' + str(file['title']) + "-" + str(file['id'] + ".mp3")
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            file = ydl.extract_info(url, download=True)
+            path = './' + str(file['title']) + "-" + str(file['id'] + ".mp3")
 
-    voice_client.play(discord.FFmpegPCMAudio(path), after=lambda x: endSong(path))
-    voice_client.source = discord.PCMVolumeTransformer(voice_client.source, 1)
-
+        voice_client.play(discord.FFmpegPCMAudio(path), after=lambda x: endSong(path))
+        voice_client.source = discord.PCMVolumeTransformer(voice_client.source, 1)
+    except:
+        await ctx.send('No fool')
+        vc = ctx.message.guild.voice_client
+        await vc.disconnect()
+        return
+    voice_client = await channel.connect()
     await ctx.send(f'**Music: **{url}')  # sends info about song playing right now
 
 
-    @bot.command()
-    async def stop(ctx):
-        await ctx.message.delete()
-        vc = ctx.message.guild.voice_client
-        if vc is None:
-            await ctx.send("You silly, I'm not in any VCs right now.")
-        else:
-            await vc.disconnect()
+qcount = 0
+
+
+@bot.command()
+async def queue(ctx):
+    global qcount
+    if qcount <= 6:
+        qcount += 1
+        await ctx.send('Added to the queue!' f'{ctx.author.mention}')
+    else:
+        await ctx.send('Queue full')
+
+
+@bot.command()
+async def stop(ctx):
+    await ctx.message.delete()
+    vc = ctx.message.guild.voice_client
+    if vc is None:
+        await ctx.send("You silly, I'm not in any VCs right now.")
+    else:
+        await vc.disconnect()
+
 
 # runs the bot
 bot.run(BOT_TOKEN, bot=True, reconnect=True)
