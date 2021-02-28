@@ -1,15 +1,22 @@
 import asyncio
 from os import getenv
 import datetime as dt
-
+from sys import prefix
+import os
+import youtube_dl
 
 import discord
+from discord.ext import commands
+from discord import guild, client, message
 from discord.ext import commands, tasks
 
 # Start of the bot
+from py import path
+
 intents = discord.Intents().default()
+intents.members = True
 BOT_TOKEN = getenv("BOT_TOKEN", None)
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='.', intents=intents)
 
 
 # This is so the bot is ready to do stuff
@@ -20,11 +27,13 @@ async def on_ready():
     when_it_day2.start()
 
 
+# posts a picture of a troll face !trolled
 @bot.command(name='trolled')
 async def trolled(ctx):
     await ctx.send(file=discord.File(rf'./pictures/trollface.png'))
 
 
+# plays a sound when someone plays the command !music
 @bot.command(name='music')
 async def game_music(ctx):
     channel = await ctx.message.author.voice.channel.connect()
@@ -70,6 +79,59 @@ async def before_when_it_day2():
             return
         await asyncio.sleep(1)  # wait a second before looping again. You can make it more
 
+
+@bot.event
+async def on_member_join(member):
+    if member.dm_channel is None:
+        await member.create_dm()
+    await member.send('''Why did you join this server. Oh well too late now.''')
+
+
+ydl_opts = {
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+}
+
+
+def endSong(path):
+    os.remove(path)
+
+
+@bot.command(pass_context=True)
+async def play(ctx, url):
+    if not ctx.message.author.voice:
+        await ctx.send(
+            'You are not connected to a voice channel')  # message when you are not connected to any voice channel
+        return
+
+    else:
+        channel = ctx.message.author.voice.channel
+
+    voice_client = await channel.connect()
+    path = ''
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        file = ydl.extract_info(url, download=True)
+        path = './' + str(file['title']) + "-" + str(file['id'] + ".mp3")
+
+    voice_client.play(discord.FFmpegPCMAudio(path), after=lambda x: endSong(path))
+    voice_client.source = discord.PCMVolumeTransformer(voice_client.source, 1)
+
+    await ctx.send(f'**Music: **{url}')  # sends info about song playing right now
+
+
+    @bot.command()
+    async def stop(ctx):
+        await ctx.message.delete()
+        vc = ctx.message.guild.voice_client
+        if vc is None:
+            await ctx.send("You silly, I'm not in any VCs right now.")
+        else:
+            await vc.disconnect()
 
 # runs the bot
 bot.run(BOT_TOKEN, bot=True, reconnect=True)
